@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -68,6 +69,15 @@ type WindowStats struct {
 	MovingPct  float64
 	DistanceM  int64
 	Samples    int
+}
+type DeviceView struct {
+	DeviceID  string      `json:"deviceId"`
+	Online    bool        `json:"online"`
+	LastSeen  time.Time   `json:"lastSeen"`
+	Latest    Telemetry   `json:"latest"`
+	DistanceM int64       `json:"totalDistanceM"`
+	Resets    int         `json:"resets"`
+	Window    WindowStats `json:"window60s"`
 }
 type DeviceTracker struct {
 	mu        sync.RWMutex
@@ -200,4 +210,35 @@ func (d *DeviceTracker) Window(deviceID string) WindowStats {
 		s.MovingPct = 100 * float64(movingDur) / float64(total)
 	}
 	return s
+}
+func (d *DeviceTracker) View(id string) (DeviceView, bool) {
+	d.mu.RLock()
+	latest, ok := d.latest[id]
+	if !ok {
+		d.mu.RUnlock()
+		return DeviceView{}, false
+	}
+	v := DeviceView{
+		DeviceID:  id,
+		Online:    d.online[id],
+		LastSeen:  d.seen[id],
+		Latest:    latest,
+		DistanceM: d.distanceM[id],
+		Resets:    d.resets[id],
+	}
+	d.mu.RUnlock()
+
+	v.Window = d.Window(id)
+	return v, true
+}
+
+func (d *DeviceTracker) IDs() []string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	ids := make([]string, 0, len(d.latest))
+	for id := range d.latest {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
 }
