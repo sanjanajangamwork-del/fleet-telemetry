@@ -2,19 +2,19 @@ package main
 
 import (
 	"fmt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"os"
 	"os/signal"
-    "time"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"time"
 )
 
 func main() {
 	opts := mqtt.NewClientOptions()
- broker := os.Getenv("MQTT_BROKER")
-if broker == "" {
-    broker = "tcp://localhost:1883"
-}
-opts.AddBroker(broker)
+	broker := os.Getenv("MQTT_BROKER")
+	if broker == "" {
+		broker = "tcp://localhost:1883"
+	}
+	opts.AddBroker(broker)
 	opts.SetClientID("ingest-1")
 
 	client := mqtt.NewClient(opts)
@@ -26,16 +26,25 @@ opts.AddBroker(broker)
 	}
 	fmt.Println("connected to EMQX")
 
+	tracker := NewDeviceTracker()
 	handler := func(c mqtt.Client, m mqtt.Message) {
-    t, err := parseTelemetry(m.Payload())
-    if err != nil {
-        fmt.Println("skipping bad message:", err)
-        return
-    }
-    fmt.Printf("%s %s %.1f km/h odo=%d ts=%s\n",
-        t.DeviceID, t.State, t.SpeedKph, t.OdometerMeters,
-        t.Ts.Format(time.RFC3339Nano))
-} 
+		t, err := parseTelemetry(m.Payload())
+		if err != nil {
+			fmt.Println("skipping bad message:", err)
+			return
+		}
+
+		accepted, reason := tracker.Process(t)
+		if !accepted {
+			fmt.Println("skipping message:", reason)
+			return
+		}
+
+		fmt.Printf("%s %s %.1f km/h odo=%d ts=%s\n",
+			t.DeviceID, t.State, t.SpeedKph, t.OdometerMeters,
+			t.Ts.Format(time.RFC3339Nano))
+	}
+
 	sub := client.Subscribe("fleet/+/+/telemetry", 0, handler)
 	sub.Wait()
 	fmt.Println("subscribed, waiting for messages (Ctrl+C to stop)")
