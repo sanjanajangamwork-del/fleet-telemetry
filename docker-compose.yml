@@ -1,4 +1,4 @@
-services:
+﻿services:
   emqx:
     image: emqx/emqx:latest
     container_name: emqx
@@ -6,3 +6,16 @@ services:
       - "1883:1883"
       - "8083:8083"
       - "18083:18083"
+
+  ingest:
+    image: fleet-ingest:latest
+    container_name: fleet-ingest
+    ports:
+      - "8080:8080"
+    environment:
+      MQTT_BROKER: "tcp://emqx:1883"
+      HTTP_ADDR: ":8080"
+    depends_on:
+      - emqx
+    restart: unless-stopped
+
