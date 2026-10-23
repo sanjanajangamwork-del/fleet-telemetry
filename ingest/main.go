@@ -27,6 +27,21 @@ func main() {
 	fmt.Println("connected to EMQX")
 
 	tracker := NewDeviceTracker()
+	done := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				for _, id := range tracker.CheckOffline(time.Now(), 15*time.Second) {
+					fmt.Println(id, "is now OFFLINE")
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
 	handler := func(c mqtt.Client, m mqtt.Message) {
 		t, err := parseTelemetry(m.Payload())
 		if err != nil {
@@ -43,6 +58,9 @@ func main() {
 		fmt.Printf("%s %s %.1f km/h odo=%d ts=%s\n",
 			t.DeviceID, t.State, t.SpeedKph, t.OdometerMeters,
 			t.Ts.Format(time.RFC3339Nano))
+		w := tracker.Window(t.DeviceID)
+		fmt.Printf("  window: avgSpeed=%.1f avgBatt=%.1f moving=%.0f%% dist=%dm n=%d\n",
+			w.AvgSpeed, w.AvgBattery, w.MovingPct, w.DistanceM, w.Samples)
 	}
 
 	sub := client.Subscribe("fleet/+/+/telemetry", 0, handler)
@@ -53,5 +71,6 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 	client.Disconnect(250)
+	close(done)
 	fmt.Println("bye")
 }

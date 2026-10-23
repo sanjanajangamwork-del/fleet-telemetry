@@ -54,12 +54,29 @@ func parseTelemetry(data []byte) (Telemetry, error) {
 	return t, nil
 }
 
+type sample struct {
+	ts      time.Time
+	speed   float64
+	battery float64
+	moving  bool
+	distM   int64
+}
+
+type WindowStats struct {
+	AvgSpeed   float64
+	AvgBattery float64
+	MovingPct  float64
+	DistanceM  int64
+	Samples    int
+}
 type DeviceTracker struct {
 	mu        sync.RWMutex
 	latest    map[string]Telemetry
 	seen      map[string]time.Time
 	distanceM map[string]int64
 	resets    map[string]int
+	online    map[string]bool
+	windows   map[string][]sample
 }
 
 func NewDeviceTracker() *DeviceTracker {
@@ -68,6 +85,8 @@ func NewDeviceTracker() *DeviceTracker {
 		seen:      make(map[string]time.Time),
 		distanceM: make(map[string]int64),
 		resets:    make(map[string]int),
+		online:    make(map[string]bool),
+		windows:   make(map[string][]sample),
 	}
 }
 
@@ -76,6 +95,8 @@ func NewDeviceTracker() *DeviceTracker {
 func (d *DeviceTracker) Process(t Telemetry) (bool, string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.seen[t.DeviceID] = time.Now()
+	d.online[t.DeviceID] = true
 
 	previous, exists := d.latest[t.DeviceID]
 	if exists {
@@ -94,8 +115,22 @@ func (d *DeviceTracker) Process(t Telemetry) (bool, string) {
 			d.distanceM[t.DeviceID] += t.OdometerMeters - previous.OdometerMeters
 		}
 	}
+	var dist int64
+	if exists && t.OdometerMeters >= previous.OdometerMeters {
+		dist = t.OdometerMeters - previous.OdometerMeters
+	}
+	w := append(d.windows[t.DeviceID], sample{
+		ts: t.Ts, speed: t.SpeedKph, battery: t.BatteryPct,
+		moving: t.State == "MOVING", distM: dist,
+	})
+	cutoff := t.Ts.Add(-60 * time.Second)
+	i := 0
+	for i < len(w) && w[i].ts.Before(cutoff) {
+		i++
+	}
+	d.windows[t.DeviceID] = w[i:]
+
 	d.latest[t.DeviceID] = t
-	d.seen[t.DeviceID] = time.Now()
 
 	return true, "accepted"
 }
@@ -111,4 +146,58 @@ func (d *DeviceTracker) Stats(deviceID string) (int64, int) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.distanceM[deviceID], d.resets[deviceID]
+}
+
+// CheckOffline marks devices silent for longer than timeout as offline
+// and returns the IDs that just changed.
+func (d *DeviceTracker) CheckOffline(now time.Time, timeout time.Duration) []string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	var changed []string
+	for id, last := range d.seen {
+		if d.online[id] && now.Sub(last) > timeout {
+			d.online[id] = false
+			changed = append(changed, id)
+		}
+	}
+	return changed
+}
+
+func (d *DeviceTracker) IsOnline(deviceID string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.online[deviceID]
+}
+func (d *DeviceTracker) Window(deviceID string) WindowStats {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	w := d.windows[deviceID]
+	var s WindowStats
+	if len(w) == 0 {
+		return s
+	}
+	var sumSpeed, sumBat float64
+	var movingDur, total time.Duration
+	for i, x := range w {
+		sumSpeed += x.speed
+		sumBat += x.battery
+		if i > 0 {
+			s.DistanceM += x.distM
+			dt := x.ts.Sub(w[i-1].ts)
+			total += dt
+			if w[i-1].moving {
+				movingDur += dt
+			}
+		}
+	}
+	n := float64(len(w))
+	s.AvgSpeed = sumSpeed / n
+	s.AvgBattery = sumBat / n
+	s.Samples = len(w)
+	if total > 0 {
+		s.MovingPct = 100 * float64(movingDur) / float64(total)
+	}
+	return s
 }
