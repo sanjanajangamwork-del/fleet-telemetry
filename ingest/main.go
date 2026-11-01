@@ -29,6 +29,7 @@ func main() {
 
 	tracker := NewDeviceTracker()
 	counters := &Counters{}
+	hub := NewHub(counters)
 
 	handler := func(c mqtt.Client, m mqtt.Message) {
 		counters.Received.Add(1)
@@ -49,6 +50,7 @@ func main() {
 			return
 		}
 		counters.Accepted.Add(1)
+		hub.Publish(t.DeviceID, tracker)
 	}
 
 	opts := mqtt.NewClientOptions()
@@ -91,7 +93,7 @@ func main() {
 		}
 	}()
 
-	srv := &http.Server{Addr: addr, Handler: newMux(tracker, counters)}
+	srv := &http.Server{Addr: addr, Handler: newMux(tracker, counters, hub)}
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Println("http server error:", err)

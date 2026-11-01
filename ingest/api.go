@@ -13,6 +13,7 @@ type Counters struct {
 	Duplicates atomic.Int64
 	Late       atomic.Int64
 	Reconnects atomic.Int64
+	Dropped    atomic.Int64
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -21,7 +22,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 
-func newMux(tr *DeviceTracker, c *Counters) *http.ServeMux {
+func newMux(tr *DeviceTracker, c *Counters, hub *Hub) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -55,8 +56,10 @@ func newMux(tr *DeviceTracker, c *Counters) *http.ServeMux {
 			"dedupd":     c.Duplicates.Load(),
 			"late":       c.Late.Load(),
 			"reconnects": c.Reconnects.Load(),
+			"dropped":    c.Dropped.Load(),
 		})
 	})
+	mux.HandleFunc("GET /api/stream", hub.ServeStream)
 
 	return mux
 }
