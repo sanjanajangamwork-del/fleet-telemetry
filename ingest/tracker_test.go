@@ -107,3 +107,14 @@ func TestWindowDropsOldSamples(t *testing.T) {
 		t.Errorf("samples = %d, want 1", w.Samples)
 	}
 }
+func TestImplausibleJumpIsReset(t *testing.T) {
+	tr := NewDeviceTracker()
+	tr.Process(msg("2026-11-01T10:00:00Z", 1000))
+	tr.Process(msg("2026-11-01T10:00:01Z", 1010))
+	tr.Process(msg("2026-11-01T10:00:02Z", 187000))
+
+	dist, resets := tr.Stats("VEH-1")
+	if dist != 10 || resets != 1 {
+		t.Errorf("dist=%d resets=%d, want 10 and 1", dist, resets)
+	}
+}

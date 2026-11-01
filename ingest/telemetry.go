@@ -79,6 +79,25 @@ type DeviceView struct {
 	Resets    int         `json:"resets"`
 	Window    WindowStats `json:"window60s"`
 }
+
+// Fastest speed we consider physically plausible (about 200 km/h).
+const maxPlausibleMps = 55.6
+
+// odometerStep returns the distance between two readings and whether the
+// counter was reset. A drop, or a jump larger than the vehicle could have
+// travelled in the elapsed time, counts as a reset worth 0 distance.
+func odometerStep(prev, cur Telemetry) (int64, bool) {
+	delta := cur.OdometerMeters - prev.OdometerMeters
+	if delta < 0 {
+		return 0, true
+	}
+	dt := cur.Ts.Sub(prev.Ts).Seconds()
+	if float64(delta) > maxPlausibleMps*dt+50 {
+		return 0, true
+	}
+	return delta, false
+}
+
 type DeviceTracker struct {
 	mu        sync.RWMutex
 	latest    map[string]Telemetry
@@ -113,22 +132,22 @@ func (d *DeviceTracker) Process(t Telemetry) (bool, string) {
 		if t.Ts.Equal(previous.Ts) {
 			return false, "duplicate or same-timestamp message"
 		}
-
 		if t.Ts.Before(previous.Ts) {
 			return false, "out-of-order message"
 		}
 	}
+
+	var dist int64
 	if exists {
-		if t.OdometerMeters < previous.OdometerMeters {
+		step, reset := odometerStep(previous, t)
+		if reset {
 			d.resets[t.DeviceID]++
 		} else {
-			d.distanceM[t.DeviceID] += t.OdometerMeters - previous.OdometerMeters
+			d.distanceM[t.DeviceID] += step
+			dist = step
 		}
 	}
-	var dist int64
-	if exists && t.OdometerMeters >= previous.OdometerMeters {
-		dist = t.OdometerMeters - previous.OdometerMeters
-	}
+
 	w := append(d.windows[t.DeviceID], sample{
 		ts: t.Ts, speed: t.SpeedKph, battery: t.BatteryPct,
 		moving: t.State == "MOVING", distM: dist,
