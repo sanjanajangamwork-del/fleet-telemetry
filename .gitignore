@@ -1,1 +1,3 @@
 ingest/ingest.exe
+ingest/fleet-ingest
+simulator/target/
