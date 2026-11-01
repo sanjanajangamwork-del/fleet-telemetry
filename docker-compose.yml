@@ -10,6 +10,9 @@
 
   ingest:
     image: fleet-ingest:latest
+    build:
+      context: ./ingest
+      dockerfile: Dockerfile
     container_name: fleet-ingest
     ports:
       - "8080:8080"
@@ -21,21 +24,19 @@
     restart: unless-stopped
 
   simulator:
-    image: rust:latest
-    container_name: fleet-simulator
-    working_dir: /app
-    volumes:
-      - ./simulator:/app
-    environment:
-      MQTT_HOST: emqx
-      MQTT_PORT: "1883"
-      NUM_DEVICES: "20"
-      PUBLISH_HZ: "5"
-      CARGO_TARGET_DIR: /tmp/target
-    command: cargo run
-    depends_on:
-      - emqx
-    restart: unless-stopped
+   build:
+    context: ./simulator
+    dockerfile: Dockerfile
+   image: fleet-simulator:latest
+   container_name: fleet-simulator
+   environment:
+    MQTT_HOST: emqx
+    MQTT_PORT: "1883"
+    NUM_DEVICES: "20"
+    PUBLISH_HZ: "5"
+   depends_on:
+    - emqx
+   restart: unless-stopped   
   web:
     build:
       context: ./web
