@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync/atomic"
+	"strings"
+	"time"
 )
 
 type Counters struct {
@@ -38,7 +40,28 @@ func newMux(tr *DeviceTracker, c *Counters, hub *Hub) *http.ServeMux {
 		}
 		writeJSON(w, http.StatusOK, views)
 	})
+	mux.HandleFunc("/api/devices/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/history") {
+			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/devices/"), "/history")
 
+			window := r.URL.Query().Get("window")
+			if window == "" {
+				window = "15m"
+			}
+
+			duration, err := time.ParseDuration(window)
+			if err != nil || duration <= 0 || duration > 15*time.Minute {
+				http.Error(w, "invalid window (maximum 15m)", http.StatusBadRequest)
+				return
+			}
+
+			history := tr.History(id, time.Now().Add(-duration))
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(history)
+			return
+		}
+
+	})
 	mux.HandleFunc("GET /api/devices/{id}", func(w http.ResponseWriter, r *http.Request) {
 		v, ok := tr.View(r.PathValue("id"))
 		if !ok {

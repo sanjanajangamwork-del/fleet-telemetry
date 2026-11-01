@@ -1,0 +1,281 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #0b1120;
+    color: #e5eaf3;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.topbar {
+    height: 82px;
+    padding: 0 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #111a2c;
+    border-bottom: 1px solid #243149;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    background: #2563eb;
+    padding: 10px 15px;
+    border-radius: 9px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.brand h1 {
+    font-size: 19px;
+    letter-spacing: 2px;
+}
+
+.brand h1 span {
+    color: #60a5fa;
+}
+
+.brand p, .eyebrow {
+    color: #8292ad;
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-top: 4px;
+}
+
+.connection {
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    margin-right: 7px;
+    box-shadow: 0 0 10px #4ade80;
+}
+
+.container {
+    max-width: 1450px;
+    margin: auto;
+    padding: 35px 5%;
+}
+
+.page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.page-heading h2 {
+    font-size: 29px;
+    margin: 9px 0;
+}
+
+.subtitle, .section-heading p {
+    color: #8292ad;
+    font-size: 13px;
+}
+
+.timestamp {
+    color: #60a5fa;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.overview {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: #141f33;
+    border: 1px solid #263650;
+    border-radius: 12px;
+    padding: 23px;
+}
+
+.stat-card p {
+    color: #91a0b9;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.stat-card h2 {
+    font-size: 32px;
+    margin-top: 15px;
+}
+
+.green {
+    color: #4ade80;
+}
+
+.red {
+    color: #fb7185;
+}
+
+.fleet-section {
+    margin-top: 25px;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.section-heading h2 {
+    font-size: 21px;
+    margin-bottom: 7px;
+}
+
+#lastUpdated {
+    color: #8292ad;
+    font-size: 12px;
+}
+
+.vehicle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+}
+
+.vehicle-card {
+    background: #141f33;
+    border: 1px solid #263650;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.vehicle-card.offline {
+    opacity: 0.65;
+    border-color: #783b4a;
+}
+
+.vehicle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.vehicle-header h3 {
+    font-size: 16px;
+}
+
+.badge {
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.MOVING {
+    background: #123d32;
+    color: #4ade80;
+}
+
+.IDLE {
+    background: #493719;
+    color: #fbbf24;
+}
+
+.CHARGING {
+    background: #17385c;
+    color: #60a5fa;
+}
+
+.OFF {
+    background: #333b49;
+    color: #cbd5e1;
+}
+
+.vehicle-main {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.metric-label {
+    color: #8292ad;
+    font-size: 11px;
+}
+
+.metric-value {
+    font-size: 25px;
+    font-weight: bold;
+    margin-top: 6px;
+}
+
+.battery-track {
+    height: 7px;
+    background: #29364c;
+    border-radius: 10px;
+    margin-top: 9px;
+    overflow: hidden;
+}
+
+.battery-fill {
+    height: 100%;
+    background: #4ade80;
+    border-radius: 10px;
+}
+
+.vehicle-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 17px;
+    border-top: 1px solid #29364c;
+    padding-top: 17px;
+}
+
+.detail-value {
+    font-size: 14px;
+    margin-top: 6px;
+    font-weight: 600;
+}
+
+.loading {
+    color: #8292ad;
+    padding: 30px;
+}
+
+@media (max-width: 950px) {
+    .vehicle-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 650px) {
+    .overview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .vehicle-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .timestamp {
+        font-size: 14px;
+    }
+}

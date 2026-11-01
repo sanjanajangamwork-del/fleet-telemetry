@@ -6,6 +6,7 @@
       - "1883:1883"
       - "8083:8083"
       - "18083:18083"
+    restart: unless-stopped
 
   ingest:
     image: fleet-ingest:latest
@@ -19,3 +20,29 @@
       - emqx
     restart: unless-stopped
 
+  simulator:
+    image: rust:latest
+    container_name: fleet-simulator
+    working_dir: /app
+    volumes:
+      - ./simulator:/app
+    environment:
+      MQTT_HOST: emqx
+      MQTT_PORT: "1883"
+      NUM_DEVICES: "20"
+      PUBLISH_HZ: "5"
+      CARGO_TARGET_DIR: /tmp/target
+    command: cargo run
+    depends_on:
+      - emqx
+    restart: unless-stopped
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: fleet-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - ingest
+    restart: unless-stopped

@@ -106,6 +106,7 @@ type DeviceTracker struct {
 	resets    map[string]int
 	online    map[string]bool
 	windows   map[string][]sample
+	history   map[string][]Telemetry
 }
 
 func NewDeviceTracker() *DeviceTracker {
@@ -116,6 +117,7 @@ func NewDeviceTracker() *DeviceTracker {
 		resets:    make(map[string]int),
 		online:    make(map[string]bool),
 		windows:   make(map[string][]sample),
+		history:   make(map[string][]Telemetry),
 	}
 }
 
@@ -124,8 +126,6 @@ func NewDeviceTracker() *DeviceTracker {
 func (d *DeviceTracker) Process(t Telemetry) (bool, string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.seen[t.DeviceID] = time.Now()
-	d.online[t.DeviceID] = true
 
 	previous, exists := d.latest[t.DeviceID]
 	if exists {
@@ -135,8 +135,10 @@ func (d *DeviceTracker) Process(t Telemetry) (bool, string) {
 		if t.Ts.Before(previous.Ts) {
 			return false, "out-of-order message"
 		}
-	}
 
+	}
+	d.seen[t.DeviceID] = time.Now()
+	d.online[t.DeviceID] = true
 	var dist int64
 	if exists {
 		step, reset := odometerStep(previous, t)
@@ -158,7 +160,13 @@ func (d *DeviceTracker) Process(t Telemetry) (bool, string) {
 		i++
 	}
 	d.windows[t.DeviceID] = w[i:]
+	h := append(d.history[t.DeviceID], t)
 
+	if len(h) > 4500 {
+		h = h[len(h)-4500:]
+	}
+
+	d.history[t.DeviceID] = h
 	d.latest[t.DeviceID] = t
 
 	return true, "accepted"
@@ -260,4 +268,16 @@ func (d *DeviceTracker) IDs() []string {
 	}
 	sort.Strings(ids)
 	return ids
+}
+func (d *DeviceTracker) History(id string, since time.Time) []Telemetry {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	var result []Telemetry
+	for _, t := range d.history[id] {
+		if !t.Ts.Before(since) {
+			result = append(result, t)
+		}
+	}
+	return result
 }

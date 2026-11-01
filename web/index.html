@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetPulse | Live Telemetry</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">F</div>
+            <div>
+                <h1>FLEET<span>PULSE</span></h1>
+                <p>LIVE TELEMETRY MONITOR</p>
+            </div>
+        </div>
+
+        <div class="connection">
+            <span class="live-dot"></span>
+            SYSTEM LIVE
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="page-heading">
+            <div>
+                <p class="eyebrow">OVERVIEW / REAL-TIME</p>
+                <h2>Fleet Dashboard</h2>
+                <p class="subtitle">Monitor your connected vehicles and telemetry.</p>
+            </div>
+            <div class="timestamp" id="clock">--:--:--</div>
+        </section>
+
+        <section class="overview">
+            <div class="stat-card">
+                <p>TOTAL VEHICLES</p>
+                <h2 id="totalDevices">0</h2>
+            </div>
+            <div class="stat-card">
+                <p>ONLINE</p>
+                <h2 class="green" id="onlineDevices">0</h2>
+            </div>
+            <div class="stat-card">
+                <p>OFFLINE</p>
+                <h2 class="red" id="offlineDevices">0</h2>
+            </div>
+            <div class="stat-card">
+                <p>MESSAGES / SEC</p>
+                <h2 id="messageRate">0</h2>
+            </div>
+        </section>
+
+        <section class="fleet-section">
+            <div class="section-heading">
+                <div>
+                    <h2>Vehicle Fleet</h2>
+                    <p>Live vehicle telemetry and operating status</p>
+                </div>
+                <span id="lastUpdated">Waiting for data...</span>
+            </div>
+
+            <div class="vehicle-grid" id="vehicleGrid">
+                <div class="loading">Connecting to fleet telemetry...</div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
