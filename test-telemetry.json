@@ -1,0 +1,10 @@
+{
+  "deviceId": "bus-001",
+  "ts": "2026-10-23T15:02:57Z",
+  "state": "MOVING",
+  "speedKph": 42.0,
+  "batteryPct": 80,
+  "odometerMeters": 12600,
+  "routeId": "route-01",
+  "faults": []
+}
