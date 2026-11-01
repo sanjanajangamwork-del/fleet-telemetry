@@ -12,6 +12,7 @@ type Counters struct {
 	BadMessage atomic.Int64
 	Duplicates atomic.Int64
 	Late       atomic.Int64
+	Reconnects atomic.Int64
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -53,6 +54,7 @@ func newMux(tr *DeviceTracker, c *Counters) *http.ServeMux {
 			"badMessage": c.BadMessage.Load(),
 			"dedupd":     c.Duplicates.Load(),
 			"late":       c.Late.Load(),
+			"reconnects": c.Reconnects.Load(),
 		})
 	})
 
