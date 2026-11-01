@@ -1,48 +1,128 @@
-\# Fleet Telemetry Pipeline
+Live Fleet Telemetry Pipeline
+-A real-time vehicle telemetry monitoring system built using Rust, MQTT, Go, and a web dashboard.
 
+# 1. Architecture
+The system consists of four services:
 
+Rust Simulator → EMQX MQTT Broker → Go Ingestion Service → Web Dashboard
 
-Simulator (Rust) -> EMQX (MQTT broker) -> Ingest service (Go) -> HTTP API
+Simulator: Generates telemetry for 20 vehicles at 5 messages per second per vehicle.
+EMQX: Receives and distributes telemetry using MQTT.
+Go Ingestion Service: Validates messages, processes vehicle data, calculates statistics, and exposes HTTP/SSE endpoints.
+Web Dashboard: Displays live vehicle information and fleet statistics.
 
+# 2. Technologies Used
 
+ - Rust
+ - Go
+ - MQTT
+ - EMQX
+ - HTML, CSS, JavaScript
+ - Docker and Docker Compose
+ - Server-Sent Events (SSE)
 
-\## Run
+# 3. Requirements
 
-1\. docker compose up -d       (starts EMQX and the ingest service)
+-Docker Desktop or Docker Engine
+-Docker Compose
+-Git (for cloning the repository)
 
-2\. Start the simulator:
+No local Rust or Go installation is required when running through Docker Compose.
+ 
+ # 4. Run the Project
 
-&#x20;  cd simulator
+Clone the repository:
 
-&#x20;  docker run --rm --init -v ${PWD}:/app -w /app -e CARGO\_TARGET\_DIR=/tmp/target -e MQTT\_HOST=host.docker.internal rust:latest cargo run
+- git clone https://github.com/sanjanajangamwork-del/fleet-telemetry.git
+cd fleet-telemetry
 
-3\. Open http://localhost:8080/api/devices and http://localhost:8080/stats
+- Build and start all services:
+   docker compose up -d --build
 
-&#x20;  EMQX dashboard: http://localhost:18083 (admin / public)
+- Check service status:
+   docker compose ps
 
+- Open the dashboard:
+   http://localhost:3000
 
+# Other endpoints:
 
-\## What works
+- API: http://localhost:8080/api/devices
+- Health: http://localhost:8080/healthz
+- Statistics: http://localhost:8080/stats
+- EMQX Dashboard: http://localhost:18083
 
-\- Go ingest service subscribes to fleet/+/+/telemetry
+# 5. Features
 
-\- Validation of every message
+# Telemetry Processing
 
-\- Duplicates and late messages are rejected
+- MQTT subscription to vehicle telemetry topics.
+- Validation of incoming telemetry messages.
+- Duplicate message rejection.
+- Out-of-order message rejection.
+- Odometer reset handling without negative distance calculations.
+- Vehicle ONLINE/OFFLINE detection.
+- A vehicle is marked OFFLINE after more than 15 seconds without telemetry.
 
-\- Odometer drop is treated as a tracker reset: distance is never negative
+# Rolling Statistics
 
-\- OFFLINE after 15 s of silence, ONLINE on the next message
+The system maintains a rolling 60-second window for:
 
-\- 60-second rolling window: average speed and battery, moving %, distance
+- Average speed.
+- Average battery level.
+- Moving percentage.
+- Distance travelled.
 
-\- HTTP API: /healthz, /api/devices, /api/devices/{id}, /stats
+# API Endpoints
 
-\- Tests pass with `go test -race ./...`
+| Endpoint                               | Description                |
+| -------------------------------------- | -------------------------- |
+| `/healthz`                             | Service health             |
+| `/api/devices`                         | List vehicles              |
+| `/api/devices/{id}`                    | Individual vehicle details |
+| `/api/devices/{id}/history?window=15m` | Vehicle telemetry history  |
+| `/api/stream`                          | Live updates through SSE   |
+| `/stats`                               | Fleet statistics           |
 
-\- Rust simulator: one vehicle with a state machine and a consistent odometer
+# Dashboard
 
+The dashboard displays:
 
+- Total vehicles.
+- Online and offline vehicles.
+- Messages per second.
+- Individual vehicle speed.
+- Battery percentage.
+- Moving percentage.
+- Distance travelled.
+- Last message information.
 
-&#x20;
+Live vehicle updates are delivered through Server-Sent Events.
+
+# 6. Testing
+
+Run Go tests locally from the ingest directory:
+
+- go test -race ./...
+(The tests cover important telemetry-processing scenarios, including duplicate messages, out-of-order messages, odometer resets, and offline detection.)
+
+# 7. Docker Services
+
+The application uses four Docker Compose services:
+
+| Service   | Purpose                         |
+| --------- | ------------------------------- |
+| emqx      | MQTT broker                     |
+| ingest    | Go telemetry processing and API |
+| simulator | Rust telemetry simulator        |
+| web       | Dashboard served through Nginx  |
+
+Stop the application:
+docker compose down
+
+View logs:
+docker compose logs -f
+
+View logs for an individual service:
+docker compose logs -f ingest
 
