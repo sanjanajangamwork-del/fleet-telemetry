@@ -126,3 +126,15 @@ docker compose logs -f
 View logs for an individual service:
 docker compose logs -f ingest
 
+## Docker Image Sizes
+
+The following table shows the content size of each Docker image used in the project.
+
+| Docker Image                 | Content Size |
+| ---------------------------- | -----------: |
+| `fleet-ingest:latest`        |      10.1 MB |
+| `fleet-simulator:latest`     |      29.4 MB |
+| `fleet-telemetry-web:latest` |      26.4 MB |
+| `emqx/emqx:latest`           |       153 MB |
+
+The Go ingestion, Rust simulator and web dashboard use separately built application images. EMQX is used as the MQTT broker.
